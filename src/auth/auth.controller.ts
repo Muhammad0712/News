@@ -2,7 +2,7 @@ import { Body, Controller, HttpCode, Post, Res } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignInDto } from './dto/sign-in.dto';
 import { Response } from 'express';
-import { CookieGetter } from '../users/common/decorators/cookie-getter.decorator';
+import { CookieGetter } from '../common/decorators/cookie-getter.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -20,7 +20,7 @@ export class AuthController {
   @HttpCode(200)
   @Post("sign-out")
   async SignOut(
-    @CookieGetter("refresh_token") refreshToken: string,
+    @CookieGetter("refreshToken") refreshToken: string,
     @Res({ passthrough: true }) res: Response
   ) {
     return  this.authService.signOut(refreshToken, res)
@@ -29,7 +29,7 @@ export class AuthController {
   @HttpCode(200)
   @Post("refresh-token")
   async RefreshToken(
-    @CookieGetter("refresh_token") refreshToken: string,
+    @CookieGetter("refreshToken") refreshToken: string,
     @Res({ passthrough: true }) res: Response
   ) {
     return  this.authService.refreshTokenUser(refreshToken, res)

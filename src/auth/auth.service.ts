@@ -19,7 +19,7 @@ export class AuthService {
         const payload = {
             id: user.id,
             email: user.email,
-            role: "user"
+            role: "admin"
         }
         const [accessToken, refreshToken] = await Promise.all([
             this.jwtService.signAsync(payload, {
@@ -38,50 +38,61 @@ export class AuthService {
     }
 
     async signIn(signInDto: SignInDto, res: Response) {
-        const user = await this.userService.findByEmail(signInDto.email);
-        if (!user) {
-            throw new NotFoundException("Email or password is incorrect");
-        }
-        const isValidPassword = await bcrypt.compare(
-            signInDto.password,
-            user.password
-        );
-        if (!isValidPassword) {
-            throw new BadRequestException("Email or password is incorrect");
-        }
+        try {
+            const user = await this.userService.findByEmail(signInDto.email);
+            if (!user) {
+                throw new NotFoundException("Email or password is incorrect");
+            }
+            const isValidPassword = await bcrypt.compare(
+                signInDto.password,
+                user.password
+            );
+            if (!isValidPassword) {
+                throw new BadRequestException("Email or password is incorrect");
+            }
 
-        const tokens = await this.generateTokens(user);
-        res.cookie("refreshToken", tokens.refreshToken, {
-            httpOnly: true,
-            maxAge: Number(process.env.COOKIE_TIME),
-        });
-        user.refreshToken = tokens.refreshToken;
-        await user.save();
-        return {
-            message: "Welcome back!",
-            id: user.id,
-            accessToken: tokens.accessToken,
+            const tokens = await this.generateTokens(user);
+            res.cookie("refreshToken", tokens.refreshToken, {
+                httpOnly: true,
+                maxAge: Number(process.env.COOKIE_TIME),
+            });
+            user.refreshToken = tokens.refreshToken;
+            await user.save();
+            return {
+                message: "Welcome back!",
+                id: user.id,
+                role: 'admin',
+                accessToken: tokens.accessToken,
+            }
+        } catch (error) {
+            return {
+                message: error.message
+            }
         }
     }
 
     async signOut(refreshToken: string, res: Response) {
-        const userData = await this.jwtService.verify(refreshToken, {
-            secret: process.env.REFRESH_TOKEN_KEY,
-        });
-        if (!userData) {
-            throw new ForbiddenException("User not verified!");
+        try {
+            const userData = await this.jwtService.verify(refreshToken, {
+                secret: process.env.REFRESH_TOKEN_KEY,
+            });
+            if (!userData) {
+                throw new ForbiddenException("User not verified!");
+            }
+            const user = await this.userService.findByEmail(userData.email);
+            if (!user) {
+                throw new BadRequestException("User not found!");
+            }
+            user.refreshToken = "";
+            await user.save();
+            res.clearCookie("refreshToken");
+            return {
+                id: userData.id,
+                message: "User logged out succesfully!",
+            };
+        } catch (error) {
+            console.log(error);
         }
-        const user = await this.userService.findByEmail(userData.email);
-        if (!user) {
-            throw new BadRequestException("User not found!");
-        }
-        user.refreshToken = "";
-        await user.save();
-        res.clearCookie("refreshToken");
-        return {
-            id: userData.id,
-            message: "User logged out succesfully!",
-        };
     }
 
     async refreshTokenUser(refreshToken: string, res: Response) {

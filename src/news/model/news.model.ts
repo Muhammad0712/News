@@ -24,7 +24,7 @@ export class News extends Model<News, INewsCreationAttr> {
     declare title: string;
 
     @Column({
-        type: DataType.STRING,
+        type: DataType.TEXT,
         allowNull: false
     })
     declare description: string;
@@ -38,9 +38,17 @@ export class News extends Model<News, INewsCreationAttr> {
 
     @Column({
         type: DataType.STRING,
-        allowNull: false
+        allowNull: false,
+        field: 'imageUrl'
     })
-    declare imageUrl: string;
+    declare image: string;
+
+    @Column({
+        type: DataType.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    })
+    declare isPublished: boolean;
 
     @BelongsTo(()=> User)
     user: User;
